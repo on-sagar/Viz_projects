@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>temp_for_overall_animation</title>
+    <style>
+        .info-box {
+            background-color: rgba(0, 0, 0, 0.8); /*set background color*/
+            color: rgb(248, 243, 243);  /*set color of text inside box */
+            padding: 15px 20px;           /*define space inside info-box */
+            border-radius: 5px;        /* define round corners of box */
+            position: absolute;       /*psotioned relatively */
+            pointer-events: none;    /*element does not respond to mouse events */
+            display: none;           /*info box is hidden when page is displayed */
+            user-select: none;
+        }
+        .info-box,
+        circle,
+        text {
+            user-select: none;
+        }
+        .info-box,
+        circle,
+        text {
+            cursor: default;
+        }
+        .slider {
+            width: 5%;
+            margin: 0 auto;
+        }
+     
+    </style>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+</head>
+<body>
+    <div class="info-box"></div>
+    <div class="slider-container">
+        <input type="range" min="0" max="1190" value="0" class="slider">
+        <span id="dateDisplay"></span> <!-- Add a span to display the date -->
+    </div>
+    <button id="playPauseButton">Pause</button>
+    <script>
+    //create a canvas for including everything later
+    var canvas = d3.select("body")
+        .append("svg")  
+        .attr("width", window.innerWidth)
+        .attr("height", window.innerHeight);
+
+    //defining for use in color scale and legend
+    const magscaledomain=["4","5","6","7"]
+
+    //include a color scale for the magnitude color scaling for circle 
+    const colorscale = d3.scaleOrdinal()
+        .domain(magscaledomain)
+        .range(["#006A35", "#004777", "#FF5733", "#000000"])
+
+//also define a legend for the magnitude wise color scaling
+function createLegend(){
+        var legendContainer = canvas.append("g")
+            .attr("class", "legend")
+            .attr("transform", "translate(150, " + (window.innerHeight - 240) + ")");
+
+            legendContainer.append("text")
+            .attr("x", 40)
+            .attr("y", magscaledomain.length - 10)
+            .style("font-weight", "bold")
+            .text("Magnitude (ML\u209C)");
+        
+        var legendItems = legendContainer.selectAll(".legend-item")
+            .data(magscaledomain)
+            .enter()
+            .append("g")
+            .attr("class", "legend-item")
+            .attr("transform", function (d, i) {
+                return "translate("+(50*i)+", "+(10)+")";
+            });
+        
+        legendItems.append("rect")
+            .attr("width", 50) 
+            .attr("height", 20) 
+            .attr("fill", function (d) {
+                return colorscale(d); 
+            });
+        
+        legendItems.append("text")
+            .attr("x",2) // adjusting the distance between the rectangle and text
+            .attr("y", 40) // adjusting the vertical position
+            .text(function (d) {
+                return d; // displaying the magnitude range
+            });
+}
+    
+//for showing nepal map on screen
+    async function fetchData() {
+        try {
+            const data = await d3.json("nepal-districts-new.geojson");
+
+            const fault = await d3.json("clipped_fault.geojson")
+            
+            var group = canvas.selectAll("g")
+                .data(data.features)
+                .enter()
+                .append("g");
+
+            var projection = d3.geoMercator().center([84, 28.0]).scale(6000)
+                .translate([window.innerWidth / 2, window.innerHeight / 2]);
+
+            var path = d3.geoPath().projection(projection);
+
+            var path1=d3.geoPath().projection(projection)
+
+            var areas = group.append("path")
+                .attr("d", path)
+                .attr("class", "area")
+                .attr("fill", "lavender")
+                .attr("stroke","white")
+                .attr("stroke-width",1)
+                ;
+
+            //fault line overlay on top of map of nepal
+            canvas.selectAll(".fault-line")
+            .data(fault.features)
+            .enter()
+            .append("path")
+            .attr("d", path1)
+            .attr("class", "fault-line")
+            .attr("fill", "none")
+            .attr("stroke", "brown")
+            .attr("stroke-width", 1);
+            
+            processDataAndPlot()      
+        } catch (error) {
+            console.error(error);
+        }
+    }
+    
+//setting up parsers for csv data handling
+parseDate = d3.utcParse("%m/%d/%Y")
+projection = d3.geoMercator().center([84,28.0]).scale(6000).translate([window.innerWidth/2,window.innerHeight/2])
+
+//function for importing csv 
+function processData(csvFilePath) {
+return d3.csv(csvFilePath).then(function(data) {
+    var transformedData = data.map(function(d) {
+    return {
+        Time: parseDate(d.Date),
+        Location: projection([d.Longitude,d.Latitude]),
+        Magnitude: d.Magnitude,
+        Epicenter: d.Epicenter
+    };
+    });
+    transformedData.sort((a,b)=>a.Time-b.Time)
+    return transformedData;
+});
+}
+    ///a function for creating circles which has to be explicitly called
+
+function creator(csvdata){
+    var Circles= canvas.selectAll("circle")
+    .data(csvdata)
+    .enter()
+    .append("circle")
+    .attr("cx",function(dataRow) {
+    var latitude = dataRow.Location[0];
+    return latitude
+    })
+    .attr("cy",function(dataRow){
+    var longitude =dataRow.Location[1]
+    return longitude
+    })
+    .attr("r",4)
+    // .attr("fill","none")
+    .attr('stroke', d=> colorscale(d.Magnitude))
+    .attr('stroke-width',0)
+    .attr("opacity","0")
+  
+
+    console.log(csvdata)
+    var slider = d3.select(".slider");
+    var currentSliderValue = +slider.property("value");
+    var isSliderReleased = true;
+
+    var isAnimationPaused = false;
+
+    function updateCircles() {
+            var sliderValue = +slider.property("value");
+            
+            // Transition circles' opacity smoothly
+            Circles.transition()
+             // Duration of the transition in milliseconds
+                .style("opacity", function(d, i) {
+                    return i <= sliderValue ? 1 : 0;
+                })
+                .attr("fill","none")
+                .attr("stroke-width",2)
+             
+                currentSliderValue = sliderValue;
+
+                // Update the date display
+                updateDateDisplay(currentSliderValue);
+
+                if (currentSliderValue === csvdata.length - 1) {
+                d3.select("#playPauseButton").text("Play");
+                }
+                 }
+    
+    function startOrResumeAnimation() {
+            if (currentSliderValue < csvdata.length - 1 && isSliderReleased) {
+                if (!isAnimationPaused) {
+                    currentSliderValue++;
+                    slider.property("value", currentSliderValue);
+                    updateCircles();
+                    setTimeout(startOrResumeAnimation, 25); // Adjust the delay as needed
+                }
+            } else if (currentSliderValue === csvdata.length - 1) {
+                // Animation finished, do nothing
+            }
+        }
+
+    slider.on("input", function() {
+            isSliderReleased = false;
+            // If the user interacts with the slider, set the button text to "Pause"
+            d3.select("#playPauseButton").text("Pause");
+            updateCircles();
+        });
+
+        // Event listener for slider change (when released)
+    slider.on("change", function() {
+            isSliderReleased = true;
+            startOrResumeAnimation();
+        });
+    
+    function togglePlayPause() {
+            var button = d3.select("#playPauseButton");
+            if (isAnimationPaused) {
+                button.text("Pause");
+                isAnimationPaused = false;
+
+                // If at the end, reset to the beginning
+                if (currentSliderValue === csvdata.length - 1) {
+                    slider.property("value", 0);
+                    currentSliderValue = 0;
+                    updateCircles();
+                }
+                startOrResumeAnimation();
+
+            } 
+            else {
+                button.text("Play");
+                isAnimationPaused = true;
+                // If Play is clicked after the animation has finished, reset the slider to the beginning
+                if (currentSliderValue === csvdata.length - 1) {
+                    slider.property("value", 0);
+                    currentSliderValue = 0;
+                    updateCircles();
+                }
+            }
+        }
+    d3.select("#playPauseButton").on("click", togglePlayPause);
+
+        // Initialize and update the date display
+    updateDateDisplay(currentSliderValue);
+
+        // Function to update the date display
+    function updateDateDisplay(sliderValue) {
+            var dateDisplay = d3.select("#dateDisplay");
+            var date = csvdata[sliderValue].Time;
+            dateDisplay.text(date);
+        }   
+    startOrResumeAnimation();
+}
+
+///CALLED FUNCTION THAT DOES ALL WORK
+async function main(){
+    try{
+    var csvdata=await processData("data.csv") //process earthquake csv data   
+    
+
+    //added today from here on downwards
+    const textLabels = canvas.selectAll("text")
+            .data(csvdata)
+            .enter()
+            .append("text")
+            .text(d => d.Epicenter ) 
+            .attr("x", d => d.Location[0]) // X-coordinate of text labels
+            .attr("y", d => d.Location[1]-10) // Y-coordinate of text labels
+            .attr("dy", 5) // Vertical offset for text labels
+            .attr("text-anchor", "middle") // Center text horizontally
+            .style("opacity", 0); // Initially hidden
+    
+            canvas.selectAll("circle, text").on("mouseover", function (event, d) {
+
+            const infoBox = document.querySelector(".info-box");
+            infoBox.style.display = "block";
+            infoBox.style.left = `${event.pageX}px`;
+            infoBox.style.top = `${event.pageY}px`;
+            // infoBox.textContent = d.Epicenter;
+
+            //this below displays three info
+            const infoText = `Magnitude: ${d.Magnitude}<br>Epicenter: ${d.Epicenter}<br>Date: ${d.Time.toDateString()}`;
+            infoBox.innerHTML = infoText;
+        });
+        canvas.selectAll("circle, text").on("mouseout", function (event, d) {
+            const infoBox = document.querySelector(".info-box");
+            infoBox.style.display = "none";
+        });
+
+    creator(csvdata) //creates circles from processes csv
+    createLegend()    
+    }
+    catch (error){
+    console.error(error)
+    }
+    }
+//MAIN FUNCTION
+async function processDataAndPlot(){
+try{
+await main()
+}
+catch (error){
+console.error(error)
+}
+}
+//calling the main parent function
+fetchData()
+    </script>
+</body>
+</html>

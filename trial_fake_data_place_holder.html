@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>fake_data_concept_working</title>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <style>
+        /* Add some CSS styles for the slider */
+        .slider {
+            width: 5%;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <svg width="800" height="400"></svg>
+    <div class="slider-container">
+        <input type="range" min="0" max="9" value="0" class="slider">
+        <span id="dateDisplay"></span> <!-- Add a span to display the date -->
+    </div>
+    <button id="playPauseButton">Pause</button>
+    <script>
+        // Sample dataset with 10 circles and their appearance times
+        var data = [
+            { Circle_ID: 1, Date: "2023-01-05T12:00:00", cx: 100, cy: 200 },
+            { Circle_ID: 2, Date: "2023-02-10T15:30:00", cx: 200, cy: 100 },
+            { Circle_ID: 3, Date: "2023-03-15T10:00:00", cx: 300, cy: 250 },
+            { Circle_ID: 4, Date: "2023-04-20T18:45:00", cx: 400, cy: 150 },
+            { Circle_ID: 5, Date: "2023-05-25T08:30:00", cx: 500, cy: 200 },
+            { Circle_ID: 6, Date: "2023-06-30T14:15:00", cx: 600, cy: 100 },
+            { Circle_ID: 7, Date: "2023-07-10T16:45:00", cx: 700, cy: 250 },
+            { Circle_ID: 8, Date: "2023-08-15T09:30:00", cx: 300, cy: 150 },
+            { Circle_ID: 9, Date: "2023-09-20T17:00:00", cx: 100, cy: 300 },
+            { Circle_ID: 10, Date: "2023-10-25T11:30:00", cx: 700, cy: 100 },
+        ];
+
+        // Parse the date strings to JavaScript Date objects
+        data.forEach(function(d) {
+            d.Date = new Date(d.Date);
+        });
+
+        // Sort the data by date in ascending order
+        data.sort(function(a, b) {
+            return a.Date - b.Date;
+        });
+
+        // Set up the SVG canvas dimensions
+        var svgWidth = 800;
+        var svgHeight = 400;
+
+        // Create an SVG element
+        var svg = d3.select("svg")
+            .attr("width", svgWidth)
+            .attr("height", svgHeight);
+
+        // Set up the circle attributes
+        var circleRadius = 20;
+
+        // Create circles based on the data
+        var circles = svg.selectAll("circle")
+            .data(data)
+            .enter()
+            .append("circle")
+            .attr("cx", function(d) {
+                return d.cx;
+            })
+            .attr("cy", function(d) {
+                return d.cy;
+            })
+            .attr("r", circleRadius)
+            .attr("fill", "blue")
+            .style("opacity", 0); // Initially set opacity to 0
+
+        // Add a slider
+        var slider = d3.select(".slider");
+        var currentSliderValue = +slider.property("value");
+        var isSliderReleased = true;
+
+        // Variable to track whether the animation is paused
+        var isAnimationPaused = false;
+
+        // Function to update the circles based on the slider value
+        function updateCircles() {
+            var sliderValue = +slider.property("value");
+            
+            // Transition circles' opacity smoothly
+            circles.transition()
+                .duration(500) // Duration of the transition in milliseconds
+                .style("opacity", function(d, i) {
+                    return i <= sliderValue ? 1 : 0;
+                });
+
+            // Update the current slider value
+            currentSliderValue = sliderValue;
+
+            // Update the date display
+            updateDateDisplay(currentSliderValue);
+            
+            // Check if the slider is at the end
+            if (currentSliderValue === data.length - 1) {
+                d3.select("#playPauseButton").text("Play");
+            }
+        }
+
+        // Function to start or resume the animation
+        function startOrResumeAnimation() {
+            if (currentSliderValue < data.length - 1 && isSliderReleased) {
+                if (!isAnimationPaused) {
+                    currentSliderValue++;
+                    slider.property("value", currentSliderValue);
+                    updateCircles();
+                    setTimeout(startOrResumeAnimation, 1000); // Adjust the delay as needed
+                }
+            } else if (currentSliderValue === data.length - 1) {
+                // Animation finished, do nothing
+            }
+        }
+
+        // Event listener for slider input
+        slider.on("input", function() {
+            isSliderReleased = false;
+            // If the user interacts with the slider, set the button text to "Pause"
+            d3.select("#playPauseButton").text("Pause");
+            updateCircles();
+        });
+
+        // Event listener for slider change (when released)
+        slider.on("change", function() {
+            isSliderReleased = true;
+            startOrResumeAnimation();
+        });
+
+        // Function to toggle play/pause state
+        function togglePlayPause() {
+            var button = d3.select("#playPauseButton");
+            if (isAnimationPaused) {
+                button.text("Pause");
+                isAnimationPaused = false;
+
+                // If at the end, reset to the beginning
+                if (currentSliderValue === data.length - 1) {
+                    slider.property("value", 0);
+                    currentSliderValue = 0;
+                    updateCircles();
+                }
+
+                startOrResumeAnimation();
+            } else {
+                button.text("Play");
+                isAnimationPaused = true;
+
+                // If Play is clicked after the animation has finished, reset the slider to the beginning
+                if (currentSliderValue === data.length - 1) {
+                    slider.property("value", 0);
+                    currentSliderValue = 0;
+                    updateCircles();
+                }
+            }
+        }
+
+        // Event listener for play/pause button click
+        d3.select("#playPauseButton").on("click", togglePlayPause);
+
+        // Initialize and update the date display
+        updateDateDisplay(currentSliderValue);
+
+        // Function to update the date display
+        function updateDateDisplay(sliderValue) {
+            var dateDisplay = d3.select("#dateDisplay");
+            var date = data[sliderValue].Date;
+            var dateString = formatDate(date);
+            dateDisplay.text(dateString);
+        }
+
+        // Format date as "YYYY-MM-DD"
+        function formatDate(date) {
+            var year = date.getFullYear().toString();
+            var month = (date.getMonth() + 1).toString().padStart(2, "0");
+            var day = date.getDate().toString().padStart(2, "0");
+            return year + "-" + month + "-" + day;
+        }
+
+        // Start the animation
+        startOrResumeAnimation();
+    </script>
+</body>
+</html>
