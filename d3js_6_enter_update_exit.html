@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Document</title>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+</head>
+<body>
+    <script> 
+    
+    //Possibilties
+    //DOM elements<data elements (enter)
+    //DOM elements>data elements (exit)
+    //DOM element = data elements (update)
+    
+    //enter method
+    // var data =[10,20];
+
+    var canvas =d3.select("body")
+    .append("svg")
+    .attr("width",500)
+    .attr("height",500);
+
+    // var circle1 =canvas.append("circle")
+    // .attr("cx",50)
+    // .attr("cy",100)
+    // .attr("r",25);
+     
+    //since the code already contains a cricle
+    //the data is bound to existing circle and no
+    //place holder are left for what we specify here onwards
+    /*var circle =canvas.selectAll("circle")
+    .data(data)
+    .attr("fill","red")
+    .enter()
+     .append("circle")
+       .attr("cx",50)
+       .attr("cy",50)
+       .attr("fill","green")
+       .attr("r",25);*/
+                                 
+   
+    //exit method
+    var data=[10];
+
+    var circle1 =canvas.append("circle")
+    .attr("cx",50)
+    .attr("cy",100)
+    .attr("r",25);
+    
+    var circle2 =canvas.append("circle")
+    .attr("cx",50)
+    .attr("cy",200)
+    .attr("r",25);
+
+    var circle =canvas.selectAll("circle")
+    .data(data)
+    .attr("fill","green")
+    .exit()
+    .attr("fill","blue");
+  
+
+                   
+                   
+    </script>
+</body>
+</html>

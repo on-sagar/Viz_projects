@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>trials</title>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+</head>
+<body>
+    <script>
+    var canvas = d3.select("body")
+        .append("svg")
+        .attr("width", window.innerWidth)
+        .attr("height", window.innerHeight);
+
+
+//for showing nepal map on screen
+    async function fetchData() {
+        try {
+            const data = await d3.json("nepal-districts-new.geojson");
+            
+            var group = canvas.selectAll("g")
+                .data(data.features)
+                .enter()
+                .append("g");
+
+            var projection = d3.geoMercator().center([84, 28.0]).scale(6000)
+                .translate([window.innerWidth / 2, window.innerHeight / 2]);
+
+            var path = d3.geoPath().projection(projection);
+
+            var areas = group.append("path")
+                .attr("d", path)
+                .attr("class", "area")
+                .attr("fill", "lavender")
+                .attr("stroke","white")
+                .attr("stroke-width",1)
+                ;
+              
+            processDataAndPlot()      
+        } catch (error) {
+            console.error(error);
+        }
+    }
+    
+//setting up parsers for csv data handling
+parseDate = d3.utcParse("%m/%d/%Y")
+projection = d3.geoMercator().center([84,28.0]).scale(6000).translate([window.innerWidth/2,window.innerHeight/2])
+
+//function for importing csv 
+function processData(csvFilePath) {
+  return d3.csv(csvFilePath).then(function(data) {
+    var transformedData = data.map(function(d) {
+      return {
+        Time: parseDate(d.Date),
+        Location: projection([d.Longitude,d.Latitude])
+      };
+    });
+    transformedData.sort((a,b)=>a.Time-b.Time)
+    return transformedData;
+  });
+}
+    ///a function for creating circles which has to be explicitly called
+function creator(csvdata){
+    canvas.selectAll("circle")
+    .data(csvdata)
+    .enter()
+    .append("circle")
+    .attr("cx",function(dataRow) {
+    var latitude = dataRow.Location[0];
+    return latitude
+    })
+    .attr("cy",function(dataRow){
+      var longitude =dataRow.Location[1]
+      return longitude
+    })
+    .attr("r",0)
+    .attr("fill","none")
+    .attr('stroke','red')
+    .attr("stroke-width","1")
+    .transition() // Start a transition
+    .delay((dataRow, i) => {
+      return i*100
+    })
+    .duration(50)
+    .attr('r',3)
+}
+
+///CALLED FUNCTION THAT DOES ALL WORK
+async function main(){
+    try{
+      var csvdata=await processData("data.csv") //process earthquake csv data       
+    }
+    catch (error){
+      console.error(error)
+    }
+    creator(csvdata) //creates circles from processes csv
+    }
+
+
+//MAIN FUNCTION
+async function processDataAndPlot(){
+try{
+  await main()
+}
+catch (error){
+  console.error(error)
+}
+}
+
+    //calling the main parent function
+fetchData()
+
+    </script>
+</body>
+</html>

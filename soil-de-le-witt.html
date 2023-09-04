@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>SVG Fundamentals</title>
+    <style>
+      body{
+        margin: 0;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+    //. createElementNS('http://www.w3.org/2000/svg','svg');
+     
+    const width =window.innerWidth;
+    const height = window.innerHeight;
+
+    const svg = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'svg'
+      );
+    svg.setAttribute("width",width);
+    svg.setAttribute("height",height);
+    document.body.appendChild(svg);
+    
+    const mask=document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'mask');
+    mask.setAttribute('id','circle-mask')
+    svg.appendChild(mask)
+    
+    const maskRect=document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'rect');
+    maskRect.setAttribute('width',width);
+    maskRect.setAttribute('height',height);
+    maskRect.setAttribute('fill','white');
+    mask.appendChild(maskRect); 
+
+    const circle=document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'circle');
+    circle.setAttribute('cx',width/2);
+    circle.setAttribute('cy',height/2);
+    circle.setAttribute('r',200);
+    circle.setAttribute('fill','black');
+    mask.appendChild(circle);
+    
+
+
+    //for loop
+    /*
+    const n=100;
+    for(let i=0;i<n;i++){
+    const rect=document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'rect');
+    rect.setAttribute('x',i*20)
+    rect.setAttribute("width",10);
+    rect.setAttribute("height",height);
+    svg.appendChild(rect);
+    }
+    */
+   const n=100;
+    for(let i=0;i<n;i++){
+    const rect=document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'rect');
+    rect.setAttribute('y',i*20)
+    rect.setAttribute("width",width);
+    rect.setAttribute("height",10);
+    rect.setAttribute("mask",'url(#circle-mask)');
+    svg.appendChild(rect)
+    }
+    </script>
+  </body>
+</html>

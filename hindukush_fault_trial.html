@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>trials</title>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+</head>
+<body>
+    <script>
+
+    //create a canvas for including everything later
+    var canvas = d3.select("body")
+        .append("svg")  
+        .attr("width", window.innerWidth)
+        .attr("height", window.innerHeight);
+
+    //add a black rectangle to enclose the entire canvas
+    // canvas.append("rect")
+    //     .attr("width",window.innerWidth-200)
+    //     .attr("height",window.innerHeight-100)
+    //     .attr("fill","white")
+    //     .attr("stroke","black")
+    //     .attr("stroke-width",5)
+    //     .attr("transform","translate(100,25)")
+
+    //defining for use in color scale and legend
+    const magscaledomain=["4-5","5-6","6-7","7-8"]
+
+    //include a color scale for the magnitude color scaling for circle 
+    const colorscale = d3.scaleOrdinal()
+        .domain(magscaledomain)
+        .range(["#006A35", "#004777", "#FF5733", "#000000"])
+
+  //also define a legend for the magnitude wise color scaling
+  function createLegend(){
+        var legendContainer = canvas.append("g")
+            .attr("class", "legend")
+            .attr("transform", "translate(150, " + (window.innerHeight - 240) + ")");
+   
+        legendContainer.append("rect")
+            .attr("y",-20)
+            .attr("width",140)
+            .attr("height",magscaledomain.length*30+20)
+            .attr("fill","white")
+            .attr("stroke","black")
+            .attr("stroke-width",1)
+
+        legendContainer.append("text")
+            .attr("x",10)
+            .attr("y",magscaledomain.length-10)
+            .text("Magnitude Scale")
+            .style("font-weight","bold")
+        
+        var legendItems = legendContainer.selectAll(".legend-item")
+            .data(magscaledomain)
+            .enter()
+            .append("g")
+            .attr("class", "legend-item")
+            .attr("transform", function (d, i) {
+                return "translate(10, " + (i * 30) + ")";
+            });
+        
+        legendItems.append("rect")
+            .attr("width", 90) 
+            .attr("height", 20) 
+            .attr("fill", function (d) {
+                return colorscale(d); 
+            });
+        
+        legendItems.append("text")
+            .attr("x", 100) // adjusting the distance between the rectangle and text
+            .attr("y", 15) // adjusting the vertical position
+            .text(function (d) {
+                return d; // displaying the magnitude range
+            });
+  }
+      
+//for showing nepal map on screen
+    async function fetchData() {
+        try {
+            const data = await d3.json("nepal-districts-new.geojson");
+
+            const fault = await d3.json("clipped_fault.geojson")
+            
+            var group = canvas.selectAll("g")
+                .data(data.features)
+                .enter()
+                .append("g");
+
+            var projection = d3.geoMercator().center([84, 28.0]).scale(6000)
+                .translate([window.innerWidth / 2, window.innerHeight / 2]);
+
+            var path = d3.geoPath().projection(projection);
+
+            var path1=d3.geoPath().projection(projection)
+
+            var areas = group.append("path")
+                .attr("d", path)
+                .attr("class", "area")
+                .attr("fill", "lavender")
+                .attr("stroke","white")
+                .attr("stroke-width",1)
+                ;
+
+            //fault line overlay on top of map of nepal
+            canvas.selectAll(".fault-line")
+            .data(fault.features)
+            .enter()
+            .append("path")
+            .attr("d", path1)
+            .attr("class", "fault-line")
+            .attr("fill", "none")
+            .attr("stroke", "brown")
+            .attr("stroke-width", 1);
+              
+            processDataAndPlot()      
+        } catch (error) {
+            console.error(error);
+        }
+    }
+    
+//setting up parsers for csv data handling
+parseDate = d3.utcParse("%m/%d/%Y")
+projection = d3.geoMercator().center([84,28.0]).scale(6000).translate([window.innerWidth/2,window.innerHeight/2])
+
+//function for importing csv 
+function processData(csvFilePath) {
+  return d3.csv(csvFilePath).then(function(data) {
+    var transformedData = data.map(function(d) {
+      return {
+        Time: parseDate(d.Date),
+        Location: projection([d.Longitude,d.Latitude]),
+        Magnitude: d.Magnitude
+      };
+    });
+    transformedData.sort((a,b)=>a.Time-b.Time)
+    return transformedData;
+  });
+}
+    ///a function for creating circles which has to be explicitly called
+function creator(csvdata){
+    canvas.selectAll("circle")
+    .data(csvdata)
+    .enter()
+    .append("circle")
+    .attr("cx",function(dataRow) {
+    var latitude = dataRow.Location[0];
+    return latitude
+    })
+    .attr("cy",function(dataRow){
+      var longitude =dataRow.Location[1]
+      return longitude
+    })
+    .attr("r",0)
+    .attr("fill","none")
+    .attr('stroke', d=> colorscale(d.Magnitude))
+    .attr("stroke-width","1")
+    .transition() // Start a transition
+    .delay((dataRow, i) => {
+      return i*50
+    })
+    .duration(100)
+    .attr('r',3)
+}
+
+///CALLED FUNCTION THAT DOES ALL WORK
+async function main(){
+    try{
+      var csvdata=await processData("data.csv") //process earthquake csv data       
+    }
+    catch (error){
+      console.error(error)
+    }
+    creator(csvdata) //creates circles from processes csv
+    createLegend()
+    }
+
+//MAIN FUNCTION
+async function processDataAndPlot(){
+try{
+  await main()
+}
+catch (error){
+  console.error(error)
+}
+}
+//calling the main parent function
+fetchData()
+
+
+    </script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>temp_overall_animation</title>
+    <title>temp_for_overall_animation</title>
     <style>
         .info-box {
             background-color: rgba(0, 0, 0, 0.8); /*set background color*/
@@ -59,27 +59,19 @@
     </div>
     <div class="info-box"></div>
     <script>
-    
-
     //create a canvas for including everything later
     var canvas = d3.select("body")
         .append("svg")  
-            .attr("width", window.innerWidth)
-            .attr("height", window.innerHeight);
+        .attr("width", window.innerWidth)
+        .attr("height", window.innerHeight);
 
-    var visibleCircles=[]
+    //defining for use in color scale and legend
+    const magscaledomain=["4","5","6","7"]
 
-    function updateVisibleCircles() {
-    visibleCircles = csvdata.filter(function (d, i) {
-        return i <= currentSliderValue;
-    });
-    }
-
-    const magscaledomain=[4,5,6,7]
-
-    var colorscale = d3.scaleLinear()
-            .domain(magscaledomain)
-            .range(["#90EE90", "#1F4D63", "#FF5733", "#000000"]);
+    //include a color scale for the magnitude color scaling for circle 
+    const colorscale = d3.scaleOrdinal()
+        .domain(magscaledomain)
+        .range(["#006A35", "#004777", "#FF5733", "#000000"])
 
 //also define a legend for the magnitude wise color scaling
 function createLegend(){
@@ -173,12 +165,10 @@ return d3.csv(csvFilePath).then(function(data) {
         Time: parseDate(d.Date),
         Location: projection([d.Longitude,d.Latitude]),
         Magnitude: d.Magnitude,
-        Epicenter: d.Epicenter,
-        color: colorscale(d.Magnitude)
+        Epicenter: d.Epicenter
     };
     });
     transformedData.sort((a,b)=>a.Time-b.Time)
-    visibleCircles=transformedData
     return transformedData;
 });
 }
@@ -199,10 +189,12 @@ function creator(csvdata){
     })
     .attr("r",4)
     // .attr("fill","none")
-    .attr('stroke', d=> d.color)
+    .attr('stroke', d=> colorscale(d.Magnitude))
     .attr('stroke-width',0)
     .attr("opacity","0")
+  
 
+    console.log(csvdata)
     var slider = d3.select(".slider");
     var currentSliderValue = +slider.property("value");
     var isSliderReleased = true;
@@ -218,18 +210,15 @@ function creator(csvdata){
                 .style("opacity", function(d, i) {
                     return i <= sliderValue ? 1 : 0;
                 })
-                .duration(250)
                 .attr("fill","none")
                 .attr("stroke-width",2)
              
                 currentSliderValue = sliderValue;
 
-                updateVisibleCircles();
-
                 // Update the date display
                 updateDateDisplay(currentSliderValue);
 
-                if (currentSliderValue === visibleCircles.length - 1) {
+                if (currentSliderValue === csvdata.length - 1) {
                 d3.select("#playPauseButton").text("Play");
                 }
                  }
@@ -305,7 +294,6 @@ async function main(){
     try{
     var csvdata=await processData("data.csv") //process earthquake csv data   
     
-    console.log(csvdata)
 
     //added today from here on downwards
     const textLabels = canvas.selectAll("text")
@@ -321,16 +309,16 @@ async function main(){
     
             canvas.selectAll("circle, text").on("mouseover", function (event, d) {
 
-                if (visibleCircles.includes(d)) {
-        const infoBox = document.querySelector(".info-box");
-        infoBox.style.display = "block";
-        infoBox.style.left = `${event.pageX}px`;
-        infoBox.style.top = `${event.pageY}px`;
+            const infoBox = document.querySelector(".info-box");
+            infoBox.style.display = "block";
+            infoBox.style.left = `${event.pageX}px`;
+            infoBox.style.top = `${event.pageY}px`;
+            // infoBox.textContent = d.Epicenter;
 
-        const infoText = `Magnitude: ${d.Magnitude}<br>Epicenter: ${d.Epicenter}<br>Date: ${d.Time.toDateString()}`;
-        infoBox.innerHTML = infoText;
-    }
-});
+            //this below displays three info
+            const infoText = `Magnitude: ${d.Magnitude}<br>Epicenter: ${d.Epicenter}<br>Date: ${d.Time.toDateString()}`;
+            infoBox.innerHTML = infoText;
+        });
         canvas.selectAll("circle, text").on("mouseout", function (event, d) {
             const infoBox = document.querySelector(".info-box");
             infoBox.style.display = "none";

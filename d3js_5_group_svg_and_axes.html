@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Document</title>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+</head>
+<body>
+    <script> 
+    
+    var dataArray = [20,40,50,60];
+    var width=500;
+    var height=500;
+     
+    //linear scale from d3 applied on dataArray to create scaled
+    //data
+    var widthScale=d3.scale
+                     .linear()
+                     .domain([0,60])   //denotes domain(min and max data value) for scaling
+                     .range([0,width]) //denotes maximum limits
+             
+    //defining color scale for bar colors to scale according to value                
+    var color=d3.scale
+                 .linear()
+                 .domain([0,60])
+                 .range(["blue","red"])
+    
+    //creates axis 
+    var axis=d3.svg.axis()
+                   .scale(widthScale)
+                   .ticks(7);
+
+   //creates svg element container and assigns to group g
+   //and calls axis to display axis in canvas
+    var canvas =d3.select("body")
+                      .append("svg")
+                      .attr("width",width)
+                      .attr("height",height)
+                      .append("g")
+                      .attr("transform","translate(20,0)")
+
+    var bars = canvas.selectAll("rect")
+                     .data(dataArray)
+                     .enter()
+                       .append("rect")
+                       .attr("width",function(d){return widthScale(d)})
+                       .attr("height",50)
+                       .attr("fill",function(d){return color(d)})
+                       .attr("y",function(d,i){return i*100});
+    
+    //lastly append the axis at the bottom of the chart
+    canvas.append("g")
+          .attr("transform","translate(0,400)")
+          .call(axis)
+          
+  
+    </script>
+</body>
+</html>
