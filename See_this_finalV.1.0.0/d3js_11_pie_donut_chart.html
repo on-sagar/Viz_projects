@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+</head>
+<body>
+    <script>    
+
+    var data=[10,50,80]
+    var r=300
+
+    //a color scale which assigns color from specified range to data elemetns
+    var color=d3.scale.ordinal()
+    .range(["blue","orange","red"])
+
+    var canvas=d3.select("body")
+    .append("svg")
+    .attr("width",1500)
+    .attr("height",1500);
+
+    var group=canvas.append("g")
+    .attr("transform","translate(300,300)");
+    
+    var arc=d3.svg.arc()
+    .innerRadius(200)
+    .outerRadius(r);
+
+    //a pie layout generator which sets the accessor function to return
+    //the data value themselves
+    var pie=d3.layout.pie()
+    .value(function(d){return d});
+
+    //.data(pie(data)) binds the 'data' array to the selection and prepares
+    //data for creating pie splices
+    //g adds a group element for each data point
+    //and attr assigns arc class to each group
+    var arcs=group.selectAll(".arc")
+    .data(pie(data))
+    .enter()
+    .append("g")
+    .attr("class","arc");
+
+    //within each group, a path element is appended
+    //and sets the "d" attribute to arc data 
+    //attr sets the fill color of path using color scale
+    arcs.append("path")
+    .attr("d",arc)
+    .attr("fill",function(d){return color(d.data)})
+
+    //text elements are appended within each group and ppositions them
+    //remaining functions format text
+    arcs.append("text")
+    .attr("transform",function(d){return "translate("+arc.centroid(d)+")"})
+    .attr("text-anchor","middle")
+    .attr("font-size","1.5em")
+    .text(function(d){return d.data})
+    .attr("fill","white")
+     
+
+
+
+    </script>
+</body>
+</html>

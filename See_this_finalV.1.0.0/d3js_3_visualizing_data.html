@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Document</title>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+</head>
+<body>
+    <script> 
+    
+    var dataArray = [20,40,50];
+
+   //creates svg element container and assigns to variable canvas
+    var canvas =d3.select("body")
+                      .append("svg")
+                      .attr("width",500)
+                      .attr("height",500);
+    
+    //selectAll selects all rectangle elements(currently empty) and attaches data from
+    //dataArray and the enter() returns place holders for each data element
+    //for which there are no coresponding DOM elements(i.e. elements) in the page
+    //In this case since we have not rect, our enter() returns three
+    //placeholders for each value in dataArray
+    //the function returns for each element in enter(), the width i.e. 20,40 and 50
+    //d,i means d contains data, and i contains index
+
+    var bars = canvas.selectAll("rect")
+                     .data(dataArray)
+                     .enter()
+                       .append("rect")
+                       .attr("width",function(d){return d*10})
+                       .attr("height",50)
+                       .attr("y",function(d,i){return i*100});
+
+    </script>
+    </script>
+</body>
+</html>

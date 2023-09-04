@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trying new commands</title>
+    <script src="http://d3js.org/d3.v5.min.js"></script>
+</head>
+<body>
+  <script>  
+
+//no 1 ALTERRNATIVE 
+  //  d3.csv("data.csv",function(data){
+  //   return console.log(data)
+  //  })
+ 
+///NO2  ALTERNATIVE
+//  const fetchText=async(url)=>{
+//    const response = await fetch(url)
+//    return await response.text()
+//  }
+//  const csvurl="data.csv"
+ 
+//  fetchText(csvurl).then(text => {
+//   const data = d3.csvParse(text)
+//   console.log(data)
+//  })
+
+//NO 3 ALTERNATIVE
+// d3.csv("data.csv").then(function(data) {
+//   // 'data' is an array of objects, each representing a row from the CSV
+
+//   var transformedData = data.map(function(d) {
+//     return {
+//       // Create a new object with custom properties
+//       Time: d.YYYY + d.MM/30 + d.DD/365,
+//       Latitude: d.Latitude, 
+//       Longitude: d.Longitude
+//     };
+//   });
+//   console.log(transformedData); // An array of new objects with custom properties
+// });
+
+//this funciton returns a object
+
+
+parseDate = d3.utcParse("%m/%d/%Y")
+projection = d3.geoMercator().scale(6000).translate([window.innerWidth/2,window.innerHeight/2])
+
+function processData(csvFilePath) {
+  return d3.csv(csvFilePath).then(function(data) {
+    var transformedData = data.map(function(d) {
+      return {
+        Time: parseDate(d.Date),
+        Location: projection([d.Longitude,d.Latitude])
+      };
+    });
+    return transformedData;
+  });
+}
+
+
+/* CHOOSE TO RUN EITHER OF THE FOLLOWING ALTERNATIVES WITH THE FUNCTION ABOVE */
+
+///ALTERNATIVE USING THEN
+// processData('data.csv').then(function(csvdata) {
+//   console.log(csvdata); // This will output the resolved data
+// });
+
+///ASYNC ALTERNATIVE
+    async function main(){
+    try{
+      var csvdata=await processData("data.csv")
+      console.log(csvdata)
+    }
+    catch (error){
+      console.error(error)
+    }
+    }
+    main()
+
+  </script>
+    
+</body>
+</html>

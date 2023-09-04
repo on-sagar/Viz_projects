@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Document</title>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+</head>
+<body>
+    <script> 
+    /*
+    d3.select("body")
+                    .append("p")
+                    .style("color","red")
+                    //.attr()
+                    .text("yes");
+    */
+   //creates svg element container and assigns to variable canvas
+    var canvas =d3.select("body")
+                      .append("svg")
+                      .attr("width",500)
+                      .attr("height",500);
+    
+    //create aircle variable and append to the canvas(svg container)
+    var circle = canvas.append("circle")
+                       .attr("cx",200)
+                       .attr("cy",200)
+                       .attr("r",75)
+                       .attr("fill","red");
+
+    //simlarly for rectangle
+    var rectangle=canvas.append("rect")
+                               .attr("width",75)
+                               .attr("height",50);
+
+    //addline svg 
+    var l=canvas.append("line")
+                .attr("x1",0)
+                .attr("y1",400)
+                .attr("x2",250)
+                .attr("y2",250)
+                .attr("stroke","green")
+                .attr("stroke-width",10);
+    
+    </script>
+</body>
+</html>

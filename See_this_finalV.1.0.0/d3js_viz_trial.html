@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>loading map done</title>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+</head>
+<body>
+    <script>
+    var canvas = d3.select("body")
+        .append("svg")
+        .attr("width", window.innerWidth)
+        .attr("height", window.innerHeight);
+
+    async function fetchData() {
+        try {
+            const data = await d3.json("nepal-districts-new.geojson");
+            
+            var group = canvas.selectAll("g")
+                .data(data.features)
+                .enter()
+                .append("g");
+
+            var projection = d3.geoMercator().center([84, 28.0]).scale(6000)
+                .translate([window.innerWidth / 2, window.innerHeight / 2]);
+
+            var path = d3.geoPath().projection(projection);
+
+            var areas = group.append("path")
+                .attr("d", path)
+                .attr("class", "area")
+                .attr("fill", "grey");
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    fetchData();
+    </script>
+</body>
+</html>
