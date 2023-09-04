@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>temp_for_overall_animation</title>
+    <title>temp_overall_animation</title>
     <style>
         .info-box {
             background-color: rgba(0, 0, 0, 0.8); /*set background color*/
             color: rgb(248, 243, 243);  /*set color of text inside box */
             padding: 15px 20px;           /*define space inside info-box */
             border-radius: 5px;        /* define round corners of box */
-            position: absolute;       /*psotioned relatively */
+            position: absolute;       /*positioned relatively */
             pointer-events: none;    /*element does not respond to mouse events */
-            display: none;           /*info box is hidden when page is displayed */
+            display: none;           /*info box is hidden when the page is displayed */
             user-select: none;
         }
         .info-box,
@@ -25,35 +25,61 @@
         text {
             cursor: default;
         }
-        .slider {
-            width: 5%;
+        .slider-container {
+            text-align: center;
+            position: absolute;
+            top: 400px; /* Adjust the top position as needed */
+            left: 150px; /* Adjust the left position to move the slider to the left */
+            right: 0;
             margin: 0 auto;
+            display: flex; /* Use flexbox for layout */
+            flex-direction: column; /* Arrange elements in a column */
+            align-items: flex-start; /* Align elements to the left */
         }
-     
+        .slider {
+            width: 10%; /* Use the full width of the container */
+            
+        }
+        #playPauseButton {
+            display: block;
+            margin-top: 10px; /* Adjust the margin-top to create spacing between slider and button */
+        }
+        #sliderIndex {
+            align-self: flex-start; /* Align the index to the left side of the container */
+        }
     </style>
     <script src="https://d3js.org/d3.v6.min.js"></script>
 </head>
 <body>
-    <div class="info-box"></div>
     <div class="slider-container">
+        <span id="sliderIndex"></span> <!-- Display the slider index -->
         <input type="range" min="0" max="1190" value="0" class="slider">
+        <button id="playPauseButton">Pause</button>
         <span id="dateDisplay"></span> <!-- Add a span to display the date -->
     </div>
-    <button id="playPauseButton">Pause</button>
+    <div class="info-box"></div>
     <script>
+    
+
     //create a canvas for including everything later
     var canvas = d3.select("body")
         .append("svg")  
-        .attr("width", window.innerWidth)
-        .attr("height", window.innerHeight);
+            .attr("width", window.innerWidth)
+            .attr("height", window.innerHeight);
 
-    //defining for use in color scale and legend
-    const magscaledomain=["4","5","6","7"]
+    var visibleCircles=[]
 
-    //include a color scale for the magnitude color scaling for circle 
-    const colorscale = d3.scaleOrdinal()
-        .domain(magscaledomain)
-        .range(["#006A35", "#004777", "#FF5733", "#000000"])
+    function updateVisibleCircles() {
+    visibleCircles = csvdata.filter(function (d, i) {
+        return i <= currentSliderValue;
+    });
+    }
+
+    const magscaledomain=[4,5,6,7]
+
+    var colorscale = d3.scaleLinear()
+            .domain(magscaledomain)
+            .range(["#90EE90", "#1F4D63", "#FF5733", "#000000"]);
 
 //also define a legend for the magnitude wise color scaling
 function createLegend(){
@@ -65,7 +91,7 @@ function createLegend(){
             .attr("x", 40)
             .attr("y", magscaledomain.length - 10)
             .style("font-weight", "bold")
-            .text("Magnitude (ML\u209C)");
+            .text("Magnitude (ML)");
         
         var legendItems = legendContainer.selectAll(".legend-item")
             .data(magscaledomain)
@@ -96,7 +122,7 @@ function createLegend(){
         try {
             const data = await d3.json("nepal-districts-new.geojson");
 
-            const fault = await d3.json("clipped_fault.geojson")
+            const fault = await d3.json("hindukush_fault.geojson")
             
             var group = canvas.selectAll("g")
                 .data(data.features)
@@ -147,10 +173,12 @@ return d3.csv(csvFilePath).then(function(data) {
         Time: parseDate(d.Date),
         Location: projection([d.Longitude,d.Latitude]),
         Magnitude: d.Magnitude,
-        Epicenter: d.Epicenter
+        Epicenter: d.Epicenter,
+        color: colorscale(d.Magnitude)
     };
     });
     transformedData.sort((a,b)=>a.Time-b.Time)
+    visibleCircles=transformedData
     return transformedData;
 });
 }
@@ -171,12 +199,10 @@ function creator(csvdata){
     })
     .attr("r",4)
     // .attr("fill","none")
-    .attr('stroke', d=> colorscale(d.Magnitude))
+    .attr('stroke', d=> d.color)
     .attr('stroke-width',0)
     .attr("opacity","0")
-  
 
-    console.log(csvdata)
     var slider = d3.select(".slider");
     var currentSliderValue = +slider.property("value");
     var isSliderReleased = true;
@@ -192,15 +218,18 @@ function creator(csvdata){
                 .style("opacity", function(d, i) {
                     return i <= sliderValue ? 1 : 0;
                 })
+                .duration(250)
                 .attr("fill","none")
                 .attr("stroke-width",2)
              
                 currentSliderValue = sliderValue;
 
+                updateVisibleCircles();
+
                 // Update the date display
                 updateDateDisplay(currentSliderValue);
 
-                if (currentSliderValue === csvdata.length - 1) {
+                if (currentSliderValue === visibleCircles.length - 1) {
                 d3.select("#playPauseButton").text("Play");
                 }
                  }
@@ -276,6 +305,7 @@ async function main(){
     try{
     var csvdata=await processData("data.csv") //process earthquake csv data   
     
+    console.log(csvdata)
 
     //added today from here on downwards
     const textLabels = canvas.selectAll("text")
@@ -291,16 +321,16 @@ async function main(){
     
             canvas.selectAll("circle, text").on("mouseover", function (event, d) {
 
-            const infoBox = document.querySelector(".info-box");
-            infoBox.style.display = "block";
-            infoBox.style.left = `${event.pageX}px`;
-            infoBox.style.top = `${event.pageY}px`;
-            // infoBox.textContent = d.Epicenter;
+                if (visibleCircles.includes(d)) {
+        const infoBox = document.querySelector(".info-box");
+        infoBox.style.display = "block";
+        infoBox.style.left = `${event.pageX}px`;
+        infoBox.style.top = `${event.pageY}px`;
 
-            //this below displays three info
-            const infoText = `Magnitude: ${d.Magnitude}<br>Epicenter: ${d.Epicenter}<br>Date: ${d.Time.toDateString()}`;
-            infoBox.innerHTML = infoText;
-        });
+        const infoText = `Magnitude: ${d.Magnitude}<br>Epicenter: ${d.Epicenter}<br>Date: ${d.Time.toDateString()}`;
+        infoBox.innerHTML = infoText;
+    }
+});
         canvas.selectAll("circle, text").on("mouseout", function (event, d) {
             const infoBox = document.querySelector(".info-box");
             infoBox.style.display = "none";
@@ -308,6 +338,7 @@ async function main(){
 
     creator(csvdata) //creates circles from processes csv
     createLegend()    
+
     }
     catch (error){
     console.error(error)
